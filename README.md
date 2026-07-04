@@ -155,10 +155,14 @@ boundary changing tree shape between the prerendered shell and the runtime resum
 Separately, in production the sibling static-fallback + `:has()` + hydrating
 client-chrome pattern in this layout produced client hydration errors
 (#418 / #423 / #425) **only on Vercel's edge resume under CPU contention/throttle**.
-We could not reproduce that client-side failure via local `next start`. The layout
-here is the minimal substrate; the deployed URL is where it can be exercised under
-real edge conditions. Our production workaround was to bind the affected subtree to
-the request (a `connection()` gate) so it renders dynamically instead of resuming.
+We could not reproduce that client-side failure via local `next start`, nor by
+driving the live Vercel deployment with Chrome DevTools under **6x CPU throttle**
+(repeated hard reloads): the home route hydrated its client header + `:has()`
+fallback with **no** `#418`/`#423`/`#425` hydration errors, and the product route
+just returns the Part-1 `500` for browser UAs. The failure appears to require real
+edge CPU contention, not emulated throttling. Our production workaround was to bind
+the affected subtree to the request (a `connection()` gate) so it renders
+dynamically instead of resuming.
 
 ## Links
 
