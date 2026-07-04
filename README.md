@@ -118,8 +118,27 @@ proposed fix.
 
 ## Live deployment
 
-Deployed to Vercel — curl the deployed URL with the two UAs above to see the
-same divergence in production. See the repo's deployment link.
+**https://nextjs-ppr-repro.vercel.app** — the same route, deployed on Vercel.
+
+On Vercel's production edge/serverless resume the mismatch is **more severe than
+local `next start`**: the browser-UA request returns a hard **HTTP 500** (served
+as `/500`, `x-matched-path: /500`), deterministically (5/5), while Googlebot gets
+`200` with the `<title>` in the initial `<head>`:
+
+```bash
+# HTTP 500 — resume mismatch surfaces as a server error on the edge
+curl -sS -o /dev/null -w '%{http_code}\n' \
+  -A 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36' \
+  https://nextjs-ppr-repro.vercel.app/product/abc
+
+# HTTP 200 — blocking metadata, title present
+curl -sS -o /dev/null -w '%{http_code}\n' \
+  -A 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Googlebot/2.1; +http://www.google.com/bot.html) Safari/537.36' \
+  https://nextjs-ppr-repro.vercel.app/product/abc
+```
+
+Locally the same request returns `200` but React discards the streamed SSR and
+falls back to client rendering; on the edge the aborted resume becomes a 500.
 
 ## Related: #92087
 
