@@ -107,11 +107,12 @@ proposed fix.
   and a Suspense-wrapped uncached `RuntimeMarker` (the postponed hole that gets
   resumed). The cached lookup (`lib/data.ts`, `'use cache'`) is read inside the
   postponed boundary.
-- `app/layout.tsx` / `app/globals.css` — also includes the sibling static-fallback
-  pattern from **#92087**: a `position: absolute` PPR fallback hidden via a
+- `app/layout.tsx` / `app/globals.css` — additionally include a sibling
+  static-fallback pattern: a `position: absolute` PPR fallback hidden via a
   `:has()` selector once the streamed content arrives, plus a small `'use client'`
-  interactive header. That path is edge-CPU-throttle sensitive and is **not**
-  reproducible via local `next start` (see note below).
+  interactive header. This is the **production architecture** from which we hit an
+  edge-only client hydration failure (see note below); it is not what #92087
+  itself documents.
 - `next.config.ts` — `cacheComponents: true`, `htmlLimitedBots: /.*/`.
 - `repro-check.mjs` — automated probe (`pnpm repro:check [baseUrl]`).
 
@@ -120,15 +121,25 @@ proposed fix.
 Deployed to Vercel — curl the deployed URL with the two UAs above to see the
 same divergence in production. See the repo's deployment link.
 
-## Note on #92087 (edge-only)
+## Related: #92087
 
-The sibling static-fallback + `:has()` + hydrating client chrome pattern
-(interactive chrome reconciling against a `position: absolute` static PPR
-fallback sibling) produces hydration errors (#418 / #423 / #425) **only on
-Vercel's edge resume under CPU contention/throttle**. We could not reproduce it
-via local `next start` (matches our production experience). The layout here is
-the minimal substrate for that scenario; the deployed URL is the place to
-exercise it under real edge conditions.
+[#92087](https://github.com/vercel/next.js/issues/92087) reports the **same**
+`Expected the resume to render <div> ... <__next_metadata_boundary__>` mismatch,
+reached through a different trigger: `generateMetadata` using `connection()`
+combined with a `"use cache"` page data function and `draftMode()` / `cookies()`.
+This repro reaches the identical resume mismatch through the `htmlLimitedBots: /.*/`
+metadata-shape path — complementary evidence that the root cause is the metadata
+boundary changing tree shape between the prerendered shell and the runtime resume.
+
+## Note on the edge-only client hydration failure (our production)
+
+Separately, in production the sibling static-fallback + `:has()` + hydrating
+client-chrome pattern in this layout produced client hydration errors
+(#418 / #423 / #425) **only on Vercel's edge resume under CPU contention/throttle**.
+We could not reproduce that client-side failure via local `next start`. The layout
+here is the minimal substrate; the deployed URL is where it can be exercised under
+real edge conditions. Our production workaround was to bind the affected subtree to
+the request (a `connection()` gate) so it renders dynamically instead of resuming.
 
 ## Links
 
