@@ -1,0 +1,22 @@
+{
+  "name": "nextjs-ppr-metadata-resume-repro",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start -p 3210",
+    "repro:check": "node repro-check.mjs"
+  },
+  "dependencies": {
+    "next": "16.2.9",
+    "react": "19.2.0",
+    "react-dom": "19.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.0",
+    "@types/react": "19.2.0",
+    "@types/react-dom": "19.2.0",
+    "typescript": "5.9.2"
+  }
+}
